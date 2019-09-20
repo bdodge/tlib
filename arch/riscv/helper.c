@@ -52,6 +52,7 @@ void cpu_reset(CPUState *env)
     env->silenced_extensions = silenced_extensions;
     env->priv = PRV_M;
     env->mtvec = DEFAULT_MTVEC;
+    env->nmivect = DEFAULT_NMIVEC;
     env->pc = DEFAULT_RSTVEC;
     env->exception_index = EXCP_NONE;
     set_default_nan_mode(1, &env->fp_status);
@@ -403,6 +404,30 @@ void do_interrupt(CPUState *env)
     /* TODO yield load reservation  */
     env->exception_index = EXCP_NONE; /* mark as handled */
 }
+
+void do_nmi(CPUState *env)
+{
+    if (env->nmi_index == NMI_NONE) {
+        return;
+    }
+
+    target_ulong backup_epc = env->pc;
+
+    target_ulong s = env->mstatus;
+    s = set_field(s, MSTATUS_MPIE, env->privilege_architecture_1_10 ? get_field(s, MSTATUS_MIE) : get_field(s, MSTATUS_UIE << env->priv));
+    s = set_field(s, MSTATUS_MPP, env->priv); /* store current priv level */
+    s = set_field(s, MSTATUS_MIE, 0);
+    csr_write_helper(env, s, CSR_MSTATUS);
+
+    riscv_set_mode(env, PRV_M);
+
+    /* MCAUSE value 0 is reserved to mean "unknown cause" */
+    csr_write_helper(env, 0, CSR_MCAUSE);
+    env->pc = env->nmivect + (env->nmi_index << 2);
+
+    env->nmi_index = EXCP_NONE; /* mark as handled */
+}
+
 
 void tlib_arch_dispose()
 {

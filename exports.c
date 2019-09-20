@@ -267,6 +267,15 @@ uint64_t tlib_translate_to_physical_address(uint64_t address)
   return virt_to_phys(address);
 }
 
+void tlib_set_nmi(int32_t nmi, int32_t state)
+{
+    if (state) {
+        cpu_set_nmi(cpu, nmi);
+    } else {
+        cpu_reset_nmi(cpu, nmi);
+    }
+}
+
 void tlib_set_irq(int32_t interrupt, int32_t state)
 {
   if(state)

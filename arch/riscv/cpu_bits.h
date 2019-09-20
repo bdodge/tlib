@@ -406,6 +406,9 @@
 #define RISCV_EXCP_INT_FLAG                0x80000000
 #define RISCV_EXCP_INT_MASK                0x7fffffff
 
+/* NMI Codes */
+#define NMI_NONE                        -1
+
 /* page table entry (PTE) fields */
 #define PTE_V     0x001 /* Valid */
 #define PTE_R     0x002 /* Read */
