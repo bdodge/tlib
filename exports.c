@@ -267,6 +267,11 @@ uint64_t tlib_translate_to_physical_address(uint64_t address)
   return virt_to_phys(address);
 }
 
+void tlib_set_nmi_vector_base(uint32_t nmi_vector_address)
+{
+    env->mnmivect = nmi_vector_address;
+}
+
 void tlib_set_nmi(int32_t nmi, int32_t state)
 {
     if (state) {

@@ -156,14 +156,14 @@ void helper_raise_exception(CPUState *env, uint32_t exception);
 int cpu_handle_mmu_fault(CPUState *cpu, target_ulong address, int rw,
                               int mmu_idx);
 
-static inline void cpu_set_nmi(CPUState *env, int mask)
+static inline void cpu_set_nmi(CPUState *env, int number)
 {
-    env->nmi_index |= mask;
+    env->nmi_index |= (1 << number);
 }
 
-static inline void cpu_reset_nmi(CPUState *env, int mask)
+static inline void cpu_reset_nmi(CPUState *env, int number)
 {
-    env->nmi_index &= ~mask;    
+    env->nmi_index &= ~(1 << number);    
 }
 
 static inline int cpu_mmu_index(CPUState *env)
