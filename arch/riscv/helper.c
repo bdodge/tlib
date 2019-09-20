@@ -52,7 +52,6 @@ void cpu_reset(CPUState *env)
     env->silenced_extensions = silenced_extensions;
     env->priv = PRV_M;
     env->mtvec = DEFAULT_MTVEC;
-    env->nmivect = DEFAULT_NMIVEC;
     env->pc = DEFAULT_RSTVEC;
     env->exception_index = EXCP_NONE;
     set_default_nan_mode(1, &env->fp_status);
@@ -411,8 +410,6 @@ void do_nmi(CPUState *env)
         return;
     }
 
-    target_ulong backup_epc = env->pc;
-
     target_ulong s = env->mstatus;
     s = set_field(s, MSTATUS_MPIE, env->privilege_architecture_1_10 ? get_field(s, MSTATUS_MIE) : get_field(s, MSTATUS_UIE << env->priv));
     s = set_field(s, MSTATUS_MPP, env->priv); /* store current priv level */
@@ -423,7 +420,8 @@ void do_nmi(CPUState *env)
 
     /* MCAUSE value 0 is reserved to mean "unknown cause" */
     csr_write_helper(env, 0, CSR_MCAUSE);
-    env->pc = env->nmivect + (env->nmi_index << 2);
+    env->mepc = env->pc;
+    env->pc = env->mnmivect + (env->nmi_index << 2);
 
     env->nmi_index = EXCP_NONE; /* mark as handled */
 }

@@ -86,4 +86,6 @@ DEF_HELPER_2(handle_custom_instruction, i32, i64, i64)
 
 void do_interrupt(CPUState *env);
 
+void do_nmi(CPUState *env);
+
 #include "def-helper.h"

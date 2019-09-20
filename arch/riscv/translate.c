@@ -100,7 +100,7 @@ static int ensure_extension(DisasContext *dc, target_ulong ext)
     {
         return 1;
     }
-    
+
     if(!riscv_silent_ext(cpu, ext))
     {
         char letter = 0;
@@ -1973,9 +1973,9 @@ static int disas_insn(CPUState *env, DisasContext *dc)
             gen_exit_tb_no_chaining(dc->tb);
             dc->bstate = BS_BRANCH;
 
-            tcg_temp_free_i64(id); 
-            tcg_temp_free_i64(opcode); 
-            tcg_temp_free_i64(pc_modified); 
+            tcg_temp_free_i64(id);
+            tcg_temp_free_i64(opcode);
+            tcg_temp_free_i64(pc_modified);
 
             return ci->length;
         }

@@ -222,9 +222,11 @@ int cpu_exec(CPUState *env)
         verify_state(env);
         if (setjmp(env->jmp_env) == 0) {
             /* if a nmi is pending, we execute it here */
+            #if defined(TARGET_RISCV32) || defined(TARGER_RISCV64)
             if (env->nmi_index > NMI_NONE) {
                 do_nmi(env);
             }
+            #endif
             /* if an exception is pending, we execute it here */
             if (env->exception_index >= 0) {
                 if (env->return_on_exception || env->exception_index >= EXCP_INTERRUPT) {
@@ -249,10 +251,12 @@ int cpu_exec(CPUState *env)
 
             next_tb = 0; /* force lookup of first TB */
             for(;;) {
+                #if defined(TARGET_RISCV32) || defined(TARGER_RISCV64)
                 if (env->nmi_index > NMI_NONE) {   //more readable than >=1 ?
                     do_nmi(env);
                     next_tb =0;
                 }
+                #endif
                 interrupt_request = env->interrupt_request;
                 if (unlikely(interrupt_request)) {
                     if (interrupt_request & CPU_INTERRUPT_DEBUG) {
