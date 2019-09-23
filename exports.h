@@ -21,8 +21,6 @@ void tlib_map_range(uint64_t start_addr, uint64_t length);
 void tlib_unmap_range(uint64_t start, uint64_t end);
 uint32_t tlib_is_range_mapped(uint64_t start, uint64_t end);
 void tlib_invalidate_translation_blocks(uintptr_t start, uintptr_t end);
-void tlib_set_nmi_vector_base(uint32_t nmi_vector_adress);
-void tlib_set_nmi(int32_t nmi, int32_t state);
 void tlib_set_irq(int32_t interrupt, int32_t state);
 int32_t tlib_is_irq_set(void);
 void tlib_add_breakpoint(uint64_t address);

@@ -308,6 +308,11 @@ int cpu_handle_mmu_fault(CPUState *env, target_ulong address, int access_type, i
  */
 void do_interrupt(CPUState *env)
 {
+    if(env->nmi_pending > NMI_NONE)
+    {
+        do_nmi(env);
+        return;
+    }
     if (env->exception_index == EXCP_NONE) return;
     if (env->exception_index == RISCV_EXCP_BREAKPOINT) {
         env->interrupt_request |= CPU_INTERRUPT_EXITTB;
@@ -406,7 +411,7 @@ void do_interrupt(CPUState *env)
 
 void do_nmi(CPUState *env)
 {
-    if (env->nmi_index == NMI_NONE) {
+    if (env->nmi_pending == NMI_NONE) {
         return;
     }
 
@@ -418,14 +423,15 @@ void do_nmi(CPUState *env)
 
     riscv_set_mode(env, PRV_M);
 
+    int32_t nmi_index = ctz64(env->nmi_pending);
+
     /* MCAUSE value 0 is reserved to mean "unknown cause" */
-    csr_write_helper(env, 0, CSR_MCAUSE);
+    csr_write_helper(env, nmi_index, CSR_MCAUSE);
     env->mepc = env->pc;
-    env->pc = env->mnmivect + (env->nmi_index << 2);
+    env->pc = env->mnmivect + (nmi_index << 2);
 
-    env->nmi_index = EXCP_NONE; /* mark as handled */
+    env->nmi_pending &= ~(1<<nmi_index); /* marki this nmi as handled */
 }
-
 
 void tlib_arch_dispose()
 {

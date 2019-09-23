@@ -4,7 +4,6 @@
 #include "cpu-defs.h"
 #include "softfloat.h"
 #include "host-utils.h"
-
 #include "cpu-common.h"
 
 // This could possibly be generalized. 0 and 1 values are used as "is_write". This conflicts in a way with READ_ACCESS_TYPE et al.
@@ -121,8 +120,9 @@ struct CPUState {
     uint64_t minstret_snapshot;
     
     /* non maskable interrupts */
-    int nmi_index;
-    target_ulong mnmivect;
+    int nmi_pending;
+    target_ulong mnmivect;  /* interrupt vector base adress */
+    uint32_t mnmilen;   /* vector lenght */
 
     /* if privilege architecture v1.10 is not set, we assume 1.09 */
     bool privilege_architecture_1_10;
@@ -156,16 +156,6 @@ void helper_raise_exception(CPUState *env, uint32_t exception);
 int cpu_handle_mmu_fault(CPUState *cpu, target_ulong address, int rw,
                               int mmu_idx);
 
-static inline void cpu_set_nmi(CPUState *env, int number)
-{
-    env->nmi_index |= (1 << number);
-}
-
-static inline void cpu_reset_nmi(CPUState *env, int number)
-{
-    env->nmi_index &= ~(1 << number);    
-}
-
 static inline int cpu_mmu_index(CPUState *env)
 {
     return env->priv;
@@ -193,6 +183,10 @@ static inline int riscv_mstatus_fs(CPUState *env)
 {
     return env->mstatus & MSTATUS_FS;
 }
+
+void cpu_set_nmi(CPUState *env, int number);
+
+void cpu_reset_nmi(CPUState *env, int number);
 
 void csr_write_helper(CPUState *env, target_ulong val_to_write,
         target_ulong csrno);

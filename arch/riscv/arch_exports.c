@@ -108,3 +108,17 @@ uint32_t tlib_set_csr_validation(uint32_t value)
     return result;
 }
 
+void tlib_set_nmi_vector(uint32_t nmi_vector_address, uint32_t nmi_vector_lenght)
+{
+    cpu->mnmilen = nmi_vector_lenght;
+    cpu->mnmivect = nmi_vector_address;
+}
+
+void tlib_set_nmi(int32_t nmi, int32_t state)
+{
+    if (state) {
+        cpu_set_nmi(cpu, nmi);
+    } else {
+        cpu_reset_nmi(cpu, nmi);
+    }
+}

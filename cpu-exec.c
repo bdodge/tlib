@@ -221,12 +221,6 @@ int cpu_exec(CPUState *env)
     for(;;) {
         verify_state(env);
         if (setjmp(env->jmp_env) == 0) {
-            /* if a nmi is pending, we execute it here */
-            #if defined(TARGET_RISCV32) || defined(TARGER_RISCV64)
-            if (env->nmi_index > NMI_NONE) {
-                do_nmi(env);
-            }
-            #endif
             /* if an exception is pending, we execute it here */
             if (env->exception_index >= 0) {
                 if (env->return_on_exception || env->exception_index >= EXCP_INTERRUPT) {
@@ -238,25 +232,19 @@ int cpu_exec(CPUState *env)
                     break;
                 } else {
                     do_interrupt(env);
-                    if(env->exception_index != EXCP_NONE) {
+                    if(env->exception_index != -1) {
                         if (env->exception_index == EXCP_WFI) {
-                            env->exception_index = EXCP_NONE;
+                            env->exception_index = -1;
                             ret = 0;
                             break;
                         }
-                        env->exception_index = EXCP_NONE;
+                        env->exception_index = -1;
                     }
                 }
             }
 
             next_tb = 0; /* force lookup of first TB */
             for(;;) {
-                #if defined(TARGET_RISCV32) || defined(TARGER_RISCV64)
-                if (env->nmi_index > NMI_NONE) {   //more readable than >=1 ?
-                    do_nmi(env);
-                    next_tb =0;
-                }
-                #endif
                 interrupt_request = env->interrupt_request;
                 if (unlikely(interrupt_request)) {
                     if (interrupt_request & CPU_INTERRUPT_DEBUG) {
@@ -270,7 +258,7 @@ int cpu_exec(CPUState *env)
                     if (env->exception_index == EXCP_WFI) {
                         cpu_loop_exit_without_hook(env);
                     }
-                    env->exception_index = EXCP_NONE;
+                    env->exception_index = -1;
                     /* Don't use the cached interrupt_request value,
                        do_interrupt may have updated the EXITTB flag. */
                     if (env->interrupt_request & CPU_INTERRUPT_EXITTB) {
@@ -289,7 +277,7 @@ int cpu_exec(CPUState *env)
                     env->tb_restart_request = 0;
                     cpu_loop_exit_without_hook(env);
                 }
-                if(unlikely(env->exception_index != EXCP_NONE)) {
+                if(unlikely(env->exception_index != -1)) {
                     cpu_loop_exit_without_hook(env);
                 }
 
