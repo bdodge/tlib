@@ -2122,14 +2122,11 @@ int process_interrupt(int interrupt_request, CPUState *env)
 {
     if (interrupt_request & CPU_INTERRUPT_HARD) {
         int interruptno = riscv_cpu_hw_interrupts_pending(env);
-	    if (env->nmi_pending > NMI_NONE){
-                do_nmi(env);
-                return 1;
-	    } else if (interruptno + 1) {
-                env->exception_index = RISCV_EXCP_INT_FLAG | interruptno;
-                do_interrupt(env);
-                return 1;
-            }
+        if ((interruptno + 1) || (env->nmi_pending > NMI_NONE)) {
+            env->exception_index = RISCV_EXCP_INT_FLAG | interruptno;
+            do_interrupt(env);
+            return 1;
+        }
     }
     return 0;
 }

@@ -425,12 +425,14 @@ void do_nmi(CPUState *env)
 
     int32_t nmi_index = ctz64(env->nmi_pending);
 
-    /* MCAUSE value 0 is reserved to mean "unknown cause" */
     csr_write_helper(env, nmi_index, CSR_MCAUSE);
     env->mepc = env->pc;
     env->pc = env->mnmivect + (nmi_index << 2);
 
     env->nmi_pending &= ~(1<<nmi_index); /* marki this nmi as handled */
+    if (env->mip > 0 && env->nmi_pending == NMI_NONE){
+        env->interrupt_request &= ~CPU_INTERRUPT_HARD;
+    }
 }
 
 void tlib_arch_dispose()
