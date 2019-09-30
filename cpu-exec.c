@@ -270,7 +270,9 @@ int cpu_exec(CPUState *env)
                 }
                 if (unlikely(env->exit_request)) {
                     env->exit_request = 0;
-                    env->exception_index = EXCP_INTERRUPT;
+                    if (interrupt_request){
+                        env->exception_index = EXCP_INTERRUPT;
+                    }
                     cpu_loop_exit_without_hook(env);
                 }
                 if (unlikely(env->tb_restart_request)) {

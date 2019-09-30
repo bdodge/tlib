@@ -430,9 +430,6 @@ void do_nmi(CPUState *env)
     env->pc = env->mnmivect + (nmi_index << 2);
 
     env->nmi_pending &= ~(1<<nmi_index); /* marki this nmi as handled */
-    if (env->mip > 0 && env->nmi_pending == NMI_NONE){
-        env->interrupt_request &= ~CPU_INTERRUPT_HARD;
-    }
 }
 
 void tlib_arch_dispose()

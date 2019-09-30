@@ -728,6 +728,8 @@ target_ulong helper_mret(CPUState *env, target_ulong cpu_pc_deb)
     cancel_reservation(env);
     release_global_memory_lock(env);
 
+    csr_write_helper(env, 0, CSR_MCAUSE);
+
     return retpc;
 }
 

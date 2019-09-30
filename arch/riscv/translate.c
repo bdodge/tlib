@@ -2110,6 +2110,7 @@ void cpu_set_nmi(CPUState *env, int number)
     } else {
         env->interrupt_request = CPU_INTERRUPT_HARD;
         env->nmi_pending |= (1 << number);
+        env->exit_request = 1;
     }
 }
 
@@ -2122,7 +2123,10 @@ int process_interrupt(int interrupt_request, CPUState *env)
 {
     if (interrupt_request & CPU_INTERRUPT_HARD) {
         int interruptno = riscv_cpu_hw_interrupts_pending(env);
-        if ((interruptno + 1) || (env->nmi_pending > NMI_NONE)) {
+        if (env->nmi_pending > NMI_NONE){
+            do_interrupt(env);
+            return 1;
+        }else if (interruptno + 1) {
             env->exception_index = RISCV_EXCP_INT_FLAG | interruptno;
             do_interrupt(env);
             return 1;
