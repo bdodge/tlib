@@ -46,6 +46,47 @@ target_ulong virt_to_phys(target_ulong virt) {
         return phys_addr;
 }
 
+/* NOTE: this function can trigger an exception */
+/* NOTE2: the returned address is not exactly the physical address: it
+   is the offset relative to phys_ram_base */
+target_ulong virt_to_phys_mode(CPUState *env1, target_ulong virt)
+{
+    int mmu_idx, page_index, pd;
+    void *p;
+
+    page_index = (virt >> TARGET_PAGE_BITS) & (CPU_TLB_SIZE - 1);
+    mmu_idx = cpu_mmu_index(env1);
+    if (unlikely(env1->tlb_table[mmu_idx][page_index].addr_code !=
+                 (virt & TARGET_PAGE_MASK))) {
+        ldub_code(virt);
+    }
+    pd = env1->tlb_table[mmu_idx][page_index].addr_code & ~TARGET_PAGE_MASK;
+    if (pd > IO_MEM_ROM && !(pd & IO_MEM_ROMD)) {
+        cpu_abort(env1, "Trying to execute code outside RAM or ROM at 0x" TARGET_FMT_lx "\n", virt);
+    }
+    p = (void *)((uintptr_t)virt + env1->tlb_table[mmu_idx][page_index].addend);
+    return tlib_host_ptr_to_guest_offset(p);
+}
+
+target_ulong virt_to_phys_mode_nofault(CPUState *env1, target_ulong virt)
+{
+    int mmu_idx, page_index, pd;
+    void *p;
+
+    page_index = (virt >> TARGET_PAGE_BITS) & (CPU_TLB_SIZE - 1);
+    mmu_idx = cpu_mmu_index(env1);
+    if (unlikely(env1->tlb_table[mmu_idx][page_index].addr_code !=
+                 (virt & TARGET_PAGE_MASK))) {
+        return -1;
+    }
+    pd = env1->tlb_table[mmu_idx][page_index].addr_code & ~TARGET_PAGE_MASK;
+    if (pd > IO_MEM_ROM && !(pd & IO_MEM_ROMD)) {
+        cpu_abort(env1, "Trying to execute code outside RAM or ROM at 0x" TARGET_FMT_lx "\n", virt);
+    }
+    p = (void *)((uintptr_t)virt + env1->tlb_table[mmu_idx][page_index].addend);
+    return tlib_host_ptr_to_guest_offset(p);
+}
+
 int tb_invalidated_flag;
 
 static void TLIB_NORETURN cpu_loop_exit_without_hook(CPUState *env)

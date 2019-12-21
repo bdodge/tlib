@@ -116,6 +116,8 @@ typedef struct PhysPageDesc {
 } PhysPageDesc;
 
 target_ulong virt_to_phys(target_ulong virt);
+target_ulong virt_to_phys_mode_nofault(CPUState *env1, target_ulong virt);
+target_ulong virt_to_phys_mode_nofault(CPUState *env1, target_ulong virt);
 
 void tlib_arch_dispose(void);
 void translate_init(void);

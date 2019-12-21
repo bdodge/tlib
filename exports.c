@@ -264,7 +264,8 @@ void tlib_invalidate_translation_blocks(uintptr_t start, uintptr_t end)
 
 uint64_t tlib_translate_to_physical_address(uint64_t address)
 {
-  return virt_to_phys(address);
+  return get_page_addr_code(env, address);
+  //return virt_to_phys(address);
 }
 
 void tlib_set_irq(int32_t interrupt, int32_t state)
