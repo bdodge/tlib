@@ -21,70 +21,34 @@
 #include "atomic.h"
 
 target_ulong virt_to_phys(target_ulong virt) {
-#if (TARGET_LONG_BITS == 32)
-        #define MASK2 (0xFFFFFFFF - MASK1)
-        #define MASK1 (0xFFFFFFFF >> (32-TARGET_PAGE_BITS))
-#elif (TARGET_LONG_BITS == 64)
-        #define MASK2 (0xFFFFFFFFFFFFFFFF - MASK1)
-        #define MASK1 (0xFFFFFFFFFFFFFFFF >> (64-TARGET_PAGE_BITS))
-#else
-    #error Unsupported TARGET_LONG_BITS
-#endif
-        target_ulong phys_addr = -1;
-        int index = (virt >> TARGET_PAGE_BITS) & (CPU_TLB_SIZE - 1);
-        int i;
-        for (i = 0; i < NB_MMU_MODES; i++) {
-          target_ulong addr = (cpu->tlb_table[i][index].addr_code & MASK2) | (virt & (MASK1));
-          if (virt == addr) {
-            void *p = (void *)(uintptr_t)((cpu->tlb_table[i][index].addr_code & TARGET_PAGE_MASK) + cpu->tlb_table[i][index].addend);
-            phys_addr = tlib_host_ptr_to_guest_offset(p);
-            if (phys_addr != -1)
-              phys_addr += (virt & MASK1);
-            break;
-          }
+    int mmu_idx, page_index;
+    target_ulong phys;
+    void *p;
+
+    page_index = (virt >> TARGET_PAGE_BITS) & (CPU_TLB_SIZE - 1);
+    // look for mapping in (likely) current cpu environment
+    mmu_idx = cpu_mmu_index(env);
+    if (unlikely(env->tlb_table[mmu_idx][page_index].addr_code !=
+                 (virt & TARGET_PAGE_MASK))) {
+        // not mapped in current env mmu, check other modes
+        for (mmu_idx = 0; mmu_idx < NB_MMU_MODES; mmu_idx++) {
+            if (env->tlb_table[mmu_idx][page_index].addr_code ==
+                       (virt & TARGET_PAGE_MASK)) {
+                break;
+            }
         }
-        return phys_addr;
-}
-
-/* NOTE: this function can trigger an exception */
-/* NOTE2: the returned address is not exactly the physical address: it
-   is the offset relative to phys_ram_base */
-target_ulong virt_to_phys_mode(CPUState *env1, target_ulong virt)
-{
-    int mmu_idx, page_index, pd;
-    void *p;
-
-    page_index = (virt >> TARGET_PAGE_BITS) & (CPU_TLB_SIZE - 1);
-    mmu_idx = cpu_mmu_index(env1);
-    if (unlikely(env1->tlb_table[mmu_idx][page_index].addr_code !=
-                 (virt & TARGET_PAGE_MASK))) {
-        ldub_code(virt);
+        if (mmu_idx == NB_MMU_MODES) {
+            // not mapped in any other modes, so do a page fault
+            // to force the mapping of this addr in env
+            mmu_idx = cpu_mmu_index(env);
+            ldub_code(virt);
+        }
     }
-    pd = env1->tlb_table[mmu_idx][page_index].addr_code & ~TARGET_PAGE_MASK;
-    if (pd > IO_MEM_ROM && !(pd & IO_MEM_ROMD)) {
-        cpu_abort(env1, "Trying to execute code outside RAM or ROM at 0x" TARGET_FMT_lx "\n", virt);
-    }
-    p = (void *)((uintptr_t)virt + env1->tlb_table[mmu_idx][page_index].addend);
-    return tlib_host_ptr_to_guest_offset(p);
-}
-
-target_ulong virt_to_phys_mode_nofault(CPUState *env1, target_ulong virt)
-{
-    int mmu_idx, page_index, pd;
-    void *p;
-
-    page_index = (virt >> TARGET_PAGE_BITS) & (CPU_TLB_SIZE - 1);
-    mmu_idx = cpu_mmu_index(env1);
-    if (unlikely(env1->tlb_table[mmu_idx][page_index].addr_code !=
-                 (virt & TARGET_PAGE_MASK))) {
-        return -1;
-    }
-    pd = env1->tlb_table[mmu_idx][page_index].addr_code & ~TARGET_PAGE_MASK;
-    if (pd > IO_MEM_ROM && !(pd & IO_MEM_ROMD)) {
-        cpu_abort(env1, "Trying to execute code outside RAM or ROM at 0x" TARGET_FMT_lx "\n", virt);
-    }
-    p = (void *)((uintptr_t)virt + env1->tlb_table[mmu_idx][page_index].addend);
-    return tlib_host_ptr_to_guest_offset(p);
+    p = (void *)((uintptr_t)(virt & TARGET_PAGE_MASK) + env->tlb_table[mmu_idx][page_index].addend);
+    phys = tlib_host_ptr_to_guest_offset(p);
+    if (phys != -1)
+        phys |= (virt & ~TARGET_PAGE_MASK);
+    return phys;
 }
 
 int tb_invalidated_flag;
