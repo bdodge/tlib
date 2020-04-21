@@ -115,7 +115,7 @@ static void pmp_write_cfg(CPUState *env, uint32_t pmp_index, uint8_t val)
     }
 }
 
-static void pmp_decode_napot(target_ulong a, target_ulong *sa, target_ulong *ea)
+static void pmp_decode_napot(target_ulong addr, int napot_grain, target_ulong *start_addr, target_ulong *end_addr)
 {
     /*
        aaaa...aaa0   8-byte NAPOT range
@@ -127,16 +127,15 @@ static void pmp_decode_napot(target_ulong a, target_ulong *sa, target_ulong *ea)
        0111...1111   2^(XLEN+2)-byte NAPOT range
        1111...1111   Reserved
     */
-    if (a == -1) {
-        *sa = 0u;
-        *ea = -1;
+    if (addr == -1) {
+        *start_addr = 0u;
+        *end_addr = -1;
         return;
     } else {
-        target_ulong t1 = ctz64(~a);
-        target_ulong base = (a & ~(((target_ulong)1 << t1) - 1)) << 3;
-        target_ulong range = ((target_ulong)1 << (t1 + 3)) - 1;
-        *sa = base;
-        *ea = base + range;
+        target_ulong base = (addr & ~(((target_ulong)1 << napot_grain) - 1)) << 3;
+        target_ulong range = ((target_ulong)1 << (napot_grain + 3)) - 1;
+        *start_addr = base;
+        *end_addr = base + range;
     }
 }
 
@@ -154,6 +153,7 @@ static void pmp_update_rule(CPUState *env, uint32_t pmp_index)
     uint8_t this_cfg = env->pmp_state.pmp[pmp_index].cfg_reg;
     target_ulong this_addr = env->pmp_state.pmp[pmp_index].addr_reg;
     target_ulong prev_addr = 0u;
+    target_ulong napot_grain = 0u;
     target_ulong sa = 0u;
     target_ulong ea = 0u;
 
@@ -178,7 +178,17 @@ static void pmp_update_rule(CPUState *env, uint32_t pmp_index)
         break;
 
     case PMP_AMATCH_NAPOT:
-        pmp_decode_napot(this_addr, &sa, &ea);
+        /*  Since priv-1.11 PMP grain must be the same across all PMP regions */
+        napot_grain = ctz64(~this_addr);
+        if (env->privilege_architecture >= RISCV_PRIV1_11) {
+            if (cpu->pmp_napot_grain == -1) {
+                cpu->pmp_napot_grain = napot_grain;
+            } else if (cpu->pmp_napot_grain != napot_grain) {
+                napot_grain = cpu->pmp_napot_grain;
+                PMP_DEBUG("Tried to set different NAPOT grains size. Size forced to match previous.");
+            }
+        }
+        pmp_decode_napot(this_addr, napot_grain, &sa, &ea);
         break;
 
     default:

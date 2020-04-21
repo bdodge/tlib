@@ -4,6 +4,8 @@
 #include <stdint.h>
 
 uint32_t tlib_get_cpu_id(void);
+uint32_t tlib_get_it_state(void);
+
 void tlib_set_cpu_id(uint32_t value);
 
 #ifdef TARGET_PROTO_ARM_M

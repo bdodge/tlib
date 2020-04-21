@@ -7661,8 +7661,7 @@ int gen_intermediate_code(CPUState *env, DisasContextBase *base)
         (dc->flags & HF_INHIBIT_IRQ_MASK)) {
         return 0;
     }
-    /* if too long translation, stop generation too */
-    if (base->tb->size >= (TARGET_PAGE_SIZE - 32)) {
+    if ((base->pc & (TARGET_PAGE_SIZE - 1)) == 0) {
         return 0;
     }
     return 1;

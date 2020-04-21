@@ -147,7 +147,7 @@ static inline void kill_unknown(DisasContext *dc, int excp)
     gen_sync_pc(dc);
 
     // According to the RISC-V ISA manual,
-    // for Illegal Instruction, mtval/mbadaddr
+    // for Illegal Instruction, mtval
     // should contain an opcode of the faulting instruction.
     TCGv_i32 helper_tmp = tcg_const_i32(excp);
     TCGv_i32 helper_bdinstr = tcg_const_i32(dc->opcode);
@@ -2063,7 +2063,7 @@ int process_interrupt(int interrupt_request, CPUState *env)
         if (env->nmi_pending > NMI_NONE) {
             do_interrupt(env);
             return 1;
-        } else if (interruptno + 1) {
+        } else if (interruptno != EXCP_NONE) {
             env->exception_index = RISCV_EXCP_INT_FLAG | interruptno;
             do_interrupt(env);
             return 1;

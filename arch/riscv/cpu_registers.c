@@ -48,9 +48,14 @@ uint64_t* get_reg_pointer_64(int reg)
         case SCAUSE_64:
             return &(cpu->scause);
         case STVAL_64:
-            return &(cpu->sbadaddr);
+            return &(cpu->stval);
         case SIP_64:
             return &(cpu->mip);
+        case SPTBR_64: // same index as SATP_64
+            return (cpu->privilege_architecture >= RISCV_PRIV1_10)
+                ? &(cpu->satp)
+                : &(cpu->sptbr);
+            return &(cpu->sptbr);
         case MSTATUS_64:
             return &(cpu->mstatus);
         case MISA_64:
@@ -70,7 +75,7 @@ uint64_t* get_reg_pointer_64(int reg)
         case MCAUSE_64:
             return &(cpu->mcause);
         case MTVAL_64:
-            return &(cpu->mbadaddr);
+            return &(cpu->mtval);
         case MIP_64:
             return &(cpu->mip);
         default:
@@ -106,9 +111,13 @@ uint32_t* get_reg_pointer_32(int reg)
         case SCAUSE_32:
             return &(cpu->scause);
         case STVAL_32:
-            return &(cpu->sbadaddr);
+            return &(cpu->stval);
         case SIP_32:
             return &(cpu->mip);
+        case SPTBR_32: // same index as SATP_32
+            return (cpu->privilege_architecture >= RISCV_PRIV1_10)
+                ? &(cpu->satp)
+                : &(cpu->sptbr);
         case MSTATUS_32:
             return &(cpu->mstatus);
         case MISA_32:
@@ -128,7 +137,7 @@ uint32_t* get_reg_pointer_32(int reg)
         case MCAUSE_32:
             return &(cpu->mcause);
         case MTVAL_32:
-            return &(cpu->mbadaddr);
+            return &(cpu->mtval);
         case MIP_32:
             return &(cpu->mip);
         default:

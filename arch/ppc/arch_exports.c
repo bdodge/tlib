@@ -34,3 +34,13 @@ int32_t tlib_set_pending_interrupt(int32_t interruptNo, int32_t level)
     return 0;
 }
 
+void tlib_set_little_endian_mode(bool mode)
+{
+    if(mode) {
+        cpu->hflags |= 1 << MSR_LE;
+        cpu->msr |= 1 << MSR_LE;
+    } else {
+        cpu->hflags &= ~(1 << MSR_LE);
+        cpu->msr &= ~(1 << MSR_LE);
+    }
+}

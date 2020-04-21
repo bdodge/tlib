@@ -71,7 +71,6 @@ struct CPUState {
 
     target_ulong badaddr;
 
-    uint32_t mucounteren;
 
     target_ulong priv;
 
@@ -86,24 +85,27 @@ struct CPUState {
     target_ulong mie;
     target_ulong mideleg;
 
-    target_ulong sptbr;  /* until: priv-1.9.1 */
-    target_ulong satp;   /* since: priv-1.10.0 */
-    target_ulong sbadaddr;
-    target_ulong mbadaddr;
+    target_ulong sptbr;  /* until: priv-1.9.1;  replaced by satp */
     target_ulong medeleg;
 
     target_ulong stvec;
     target_ulong sepc;
     target_ulong scause;
+    target_ulong stval;  /* renamed from sbadaddr since: priv-1.10.0 */
+    target_ulong satp;   /* since: priv-1.10.0 */
+    target_ulong sedeleg;
+    target_ulong sideleg;
 
     target_ulong mtvec;
     target_ulong mepc;
     target_ulong mcause;
-    target_ulong mtval;  /* since: priv-1.10.0 */
+    target_ulong mtval;  /*  renamed from mbadaddr since: priv-1.10.0 */
 
-    uint32_t mscounteren;
+    uint32_t mucounteren; /* until 1.10.0 */
+    uint32_t mscounteren; /* until 1.10.0 */
     target_ulong scounteren; /* since: priv-1.10.0 */
     target_ulong mcounteren; /* since: priv-1.10.0 */
+    uint32_t mcountinhibit; /* since: priv-1.11 */
 
     target_ulong sscratch;
     target_ulong mscratch;
@@ -129,15 +131,22 @@ struct CPUState {
     target_ulong nmi_address;
     uint32_t nmi_length;
 
-    /* if privilege architecture v1.10 is not set, we assume 1.09 */
-    bool privilege_architecture_1_10;
+    int privilege_architecture;
 
     int32_t custom_instructions_count;
     custom_instruction_descriptor_t custom_instructions[CPU_CUSTOM_INSTRUCTIONS_LIMIT];
 
-    /* when set, writing to read-only CSR or accessing CSR from 
-       a wrong privilege level will *not* trigger ILLEGAL INSTRUCTION exception */
-    bool disable_csr_validation;
+    /*
+       Supported CSR validation levels:
+       * 0 - (CSR_VALIDATION_NONE): no validation
+       * 1 - (CSR_VALIDATION_PRIV): privilege level validation only
+       * 2 - (CSR_VALIDATION_FULL): full validation - privilege level and read/write bit validation
+
+       *Illegal Instruction Exception* is generated when validation fails
+
+       Levels are defined in `cpu_bits.h`
+    */
+    int32_t csr_validation_level;
 
     /* flags indicating extensions from which instructions
        that are *not* enabled for this CPU should *not* be logged as errors;
@@ -145,6 +154,9 @@ struct CPUState {
        this is useful when some instructions are `software-emulated`, 
        i.e., the ILLEGAL INSTRUCTION exception is generated and handled by the software */
     target_ulong silenced_extensions;
+
+    /* since priv-1.11.0 pmp grain size must be the same across all pmp regions */ 
+    int32_t pmp_napot_grain;
 
     CPU_COMMON
 };
@@ -207,6 +219,12 @@ enum riscv_features {
     RISCV_FEATURE_RVC = RV('C'),
     RISCV_FEATURE_RVS = RV('S'),
     RISCV_FEATURE_RVU = RV('U'),
+};
+
+enum privilege_architecture {
+    RISCV_PRIV1_09,
+    RISCV_PRIV1_10,
+    RISCV_PRIV1_11
 };
 
 static inline int riscv_has_ext(CPUState *env, target_ulong ext)

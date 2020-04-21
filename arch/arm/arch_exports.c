@@ -25,6 +25,11 @@ uint32_t tlib_get_cpu_id()
   return cpu->cp15.c0_cpuid;
 }
 
+uint32_t tlib_get_it_state()
+{
+    return cpu->condexec_bits;
+}
+
 void tlib_set_cpu_id(uint32_t value)
 {
   cpu->cp15.c0_cpuid = value;

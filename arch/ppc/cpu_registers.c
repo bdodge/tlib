@@ -22,15 +22,45 @@
 #include "cpu.h"
 #include "cpu_registers.h"
 
+#ifdef TARGET_PPC64
+uint64_t* get_reg_pointer_64(int reg)
+{
+    switch(reg)
+    {
+        case NIP_64:
+            return &(cpu->nip);
+        case MSR_64:
+            return &(cpu->msr);
+        case LR_64:
+            return &(cpu->lr);
+        case CTR_64:
+            return &(cpu->ctr);
+        case XER_64:
+            return &(cpu->xer);
+        default:
+            return NULL;
+    }
+}
+CPU_REGISTER_ACCESSOR(64);
+#endif
+#ifdef TARGET_PPC32
 uint32_t* get_reg_pointer_32(int reg)
 {
     switch(reg)
     {
         case NIP_32:
             return &(cpu->nip);
+        case MSR_32:
+            return &(cpu->msr);
+        case LR_32:
+            return &(cpu->lr);
+        case CTR_32:
+            return &(cpu->ctr);
+        case XER_32:
+            return &(cpu->xer);
         default:
             return NULL;
     }
 }
-
-CPU_REGISTER_ACCESSOR(32)
+CPU_REGISTER_ACCESSOR(32);
+#endif

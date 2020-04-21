@@ -70,6 +70,8 @@ void notdirty_mem_writew(void *opaque, target_phys_addr_t ram_addr,
 void notdirty_mem_writel(void *opaque, target_phys_addr_t ram_addr,
                                     uint32_t val);
 
+#define SWAP_BYTES(n) (((n & 0xFF) << 24) | ((n & 0xFF00) << 8) | ((n & 0xFF0000) >> 8) | ((n & 0xFF000000) >> 24))
+
 static DATA_TYPE glue(glue(slow_ld, SUFFIX), MMUSUFFIX)(target_ulong addr,
                                                         int mmu_idx,
                                                         void *retaddr);
@@ -89,8 +91,8 @@ static inline DATA_TYPE glue(io_read, SUFFIX)(target_phys_addr_t physaddr,
     res = tlib_read_double_word(physaddr);
 #else
 #ifdef TARGET_WORDS_BIGENDIAN
-    res = (uint64_t)tlib_read_double_word(physaddr) << 32;
-    res |= tlib_read_double_word(physaddr + 4);
+    res = (uint64_t)SWAP_BYTES(tlib_read_double_word(physaddr)) << 32;
+    res |= SWAP_BYTES(tlib_read_double_word(physaddr + 4));
 #else
     res = tlib_read_double_word(physaddr);
     res |= (uint64_t)tlib_read_double_word(physaddr + 4) << 32;
@@ -214,7 +216,6 @@ static DATA_TYPE glue(glue(slow_ld, SUFFIX), MMUSUFFIX)(target_ulong addr,
 
 #ifndef SOFTMMU_CODE_ACCESS
 
-#define SWAP_BYTES(n) (((n & 0xFF) << 24) | ((n & 0xFF00) << 8) | ((n & 0xFF0000) >> 8) | ((n & 0xFF000000) >> 24))
 static void glue(glue(slow_st, SUFFIX), MMUSUFFIX)(target_ulong addr,
                                                    DATA_TYPE val,
                                                    int mmu_idx,
